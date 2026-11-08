@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+PRINTER_URI=$(/usr/libexec/cups/backend/usb | awk '$1=="direct" && index($2,"usb://KONICA%20MINOLTA/185?")==1 {print $2}')
+if [ -z "$PRINTER_URI" ] || [ "$(printf '%s\n' "$PRINTER_URI" | wc -l | tr -d ' ')" != 1 ]; then
+    echo 'Connect exactly one KONICA MINOLTA 185 USB printer before installation.' >&2
+    exit 1
+fi
+/usr/sbin/lpadmin -p bizhub185 -E -v "$PRINTER_URI" \
+    -P /Library/Printers/bizhub185/bizhub185.ppd \
+    -D 'KONICA MINOLTA bizhub 185' -L USB -o printer-is-shared=false \
+    -o print-scaling-default=none
+/usr/sbin/cupsenable bizhub185
+/usr/sbin/cupsaccept bizhub185
+/usr/bin/lpstat -p bizhub185
