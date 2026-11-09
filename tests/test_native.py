@@ -21,8 +21,9 @@ def black_count(pixels):
     return sum(value*count for value,count in Counter(pixels.translate(POPCOUNT)).items())
 
 
-def geometry_pdf(width=841.8897637795,height=595.2755905512,rotation=0):
-    stream=f'0 g 24 {height-64} 24 40 re f\n{width-70} 24 40 16 re f\n'.encode()
+def geometry_pdf(width=841.8897637795,height=595.2755905512,rotation=0,stream=None):
+    if stream is None:
+        stream=f'0 g 24 {height-64} 24 40 re f\n{width-70} 24 40 16 re f\n'.encode()
     objects=[b'<< /Type /Catalog /Pages 2 0 R >>',
         b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
         f'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] /Rotate {rotation} /Resources << >> /Contents 4 0 R >>'.encode(),
@@ -80,6 +81,53 @@ class NativeTests(unittest.TestCase):
         for result in cases:
             self.assertNotEqual(result.returncode,0)
             self.assertEqual(result.stdout,b'')
+
+    def test_photo_tone_lightens_shadows_and_midgray_and_preserves_endpoints(self):
+        patches=(b'0 g 72 600 96 96 re f\n0.5019608 g 216 600 96 96 re f\n'
+                 b'1 g 360 600 96 96 re f\n0.0784314 g 504 600 64 96 re f\n')
+        pdf=geometry_pdf(595.2755905512,841.8897637795,stream=patches)
+        for mode,midtone,shadow in [('Photo',166,112),('PhotoNatural',161,100),('Auto',161,100)]:
+            with self.subTest(mode=mode):
+                result=self.run_filter(data=pdf,options=f'PageSize=A4 Rendering={mode}')
+                self.assertEqual(result.returncode,0,result.stderr)
+                pixels=first_page_pixels(result.stdout)
+                coverage=[]
+                for x in (800,2000,3200,4400):
+                    start=x//8
+                    patch=b''.join(pixels[y*620+start:y*620+start+32] for y in range(1300,1450))
+                    coverage.append(black_count(patch)/(len(patch)*8))
+                self.assertEqual(coverage[0],1.0)
+                self.assertAlmostEqual(coverage[1],(255-midtone)/255,delta=0.01)
+                self.assertEqual(coverage[2],0.0)
+                self.assertAlmostEqual(coverage[3],(255-shadow)/255,delta=0.01)
+
+    def test_auto_defaults_to_text_on_sparse_black_content(self):
+        explicit=self.run_filter()
+        automatic=self.run_filter(options='PageSize=A4')
+        self.assertEqual(automatic.returncode,0,automatic.stderr)
+        self.assertEqual(explicit.returncode,0,explicit.stderr)
+        self.assertEqual(automatic.stdout,explicit.stdout)
+
+    def test_auto_recognizes_picture_and_separates_close_color_tones(self):
+        stream=(b'0.75 0.2 0.22 rg 72 600 96 96 re f\n0.13 0.475 0.18 rg 216 600 96 96 re f\n'
+                b'0.35 0.28 0.74 rg 360 600 96 96 re f\n0.15 0.38 0.44 rg 504 600 64 96 re f\n')
+        pdf=geometry_pdf(595.2755905512,841.8897637795,stream=stream)
+        outputs={}
+        for mode in ('PhotoNatural','PhotoDefault','Auto'):
+            result=self.run_filter(data=pdf,options=f'PageSize=A4 Rendering={mode}')
+            self.assertEqual(result.returncode,0,result.stderr)
+            outputs[mode]=first_page_pixels(result.stdout)
+
+        def coverage(pixels,x):
+            patch=b''.join(pixels[y*620+x:y*620+x+32] for y in range(1300,1450))
+            return black_count(patch)/(len(patch)*8)
+
+        self.assertEqual(outputs['Auto'],outputs['PhotoDefault'])
+        for left,right,gap in ((100,250,0.12),(400,550,0.08)):
+            self.assertLess(abs(coverage(outputs['PhotoNatural'],left)-coverage(outputs['PhotoNatural'],right)),0.02)
+            self.assertGreater(abs(coverage(outputs['Auto'],left)-coverage(outputs['Auto'],right)),gap)
+        self.assertLess(coverage(outputs['Auto'],400),0.52)
+        self.assertLess(coverage(outputs['Auto'],550),0.61)
 
     def test_two_page_job(self):
         stream=b'0 g 72 700 20 20 re f\n'

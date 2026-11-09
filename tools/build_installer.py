@@ -32,7 +32,7 @@ for name in ['jbig.c','jbig.h','jbig_ar.c','jbig_ar.h','COPYING']:
 (source/'BUILD.txt').write_text('Sources supplied under GPL-2.0-or-later. Build on macOS with Command Line Tools:\nclang -std=c11 -O2 -I. cups-filter.c raster.c jbig.c jbig_ar.c -framework CoreGraphics -framework CoreFoundation -lcups -o bizhub185-filter\n')
 shutil.copyfile(ROOT/'packaging/postinstall',scripts/'postinstall')
 os.chmod(scripts/'postinstall',0o755)
-package=folder/'bizhub185-macOS-0.3.1.pkg'
+package=folder/'bizhub185-macOS-0.3.5.pkg'
 subprocess.run(['pkgbuild','--root',str(root),'--scripts',str(scripts),'--ownership','recommended',
-    '--identifier','local.bizhub185.driver','--version','0.3.1','--install-location','/',str(package)],check=True)
+    '--identifier','local.bizhub185.driver','--version','0.3.5','--install-location','/',str(package)],check=True)
 print(package)

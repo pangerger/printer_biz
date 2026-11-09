@@ -1,6 +1,6 @@
 *PPD-Adobe: "4.3"
 *FormatVersion: "4.3"
-*FileVersion: "0.3.1"
+*FileVersion: "0.3.5"
 *LanguageVersion: English
 *LanguageEncoding: ISOLatin1
 *PCFileName: "BH185.PPD"
@@ -8,7 +8,7 @@
 *Product: "(KONICA MINOLTA 185)"
 *ModelName: "KONICA MINOLTA bizhub 185"
 *ShortNickName: "bizhub 185"
-*NickName: "bizhub 185 - Local JBIG Driver 0.3.1"
+*NickName: "bizhub 185 - Local JBIG Driver 0.3.5"
 *PSVersion: "(3010.000) 0"
 *LanguageLevel: "3"
 *ColorDevice: False
@@ -44,9 +44,12 @@
 *CloseUI: *Resolution
 *OpenUI *Rendering/Black and White Rendering: PickOne
 *OrderDependency: 30 AnySetup *Rendering
-*DefaultRendering: Text
+*DefaultRendering: Auto
+*Rendering Auto/Auto (Text or Photo): ""
 *Rendering Text/Text (B - Stronger): ""
-*Rendering Photo/Photo (D - Smooth Gray): ""
+*Rendering PhotoDefault/Photo (Color Detail): ""
+*Rendering Photo/Photo (Brighter Gray): ""
+*Rendering PhotoNatural/Photo (Natural Gray): ""
 *CloseUI: *Rendering
 *OpenUI *Duplex/Two-Sided: PickOne
 *OrderDependency: 40 AnySetup *Duplex

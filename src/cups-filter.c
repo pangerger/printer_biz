@@ -61,7 +61,11 @@ int main(int argc,char **argv) {
     const char *size=cupsGetOption("PageSize",count,options);
     const char *duplex=cupsGetOption("Duplex",count,options);
     const char *quality=cupsGetOption("Rendering",count,options);
-    int photo=quality && !strcmp(quality,"Photo");
+    BizhubRendering rendering=BIZHUB_TEXT;
+    if (!quality || !strcmp(quality,"Auto")) rendering=BIZHUB_AUTO;
+    if (quality && !strcmp(quality,"Photo")) rendering=BIZHUB_PHOTO;
+    if (quality && !strcmp(quality,"PhotoNatural")) rendering=BIZHUB_PHOTO_NATURAL;
+    if (quality && !strcmp(quality,"PhotoDefault")) rendering=BIZHUB_PHOTO_DEFAULT;
     const char *orientation=cupsGetOption("orientation-requested",count,options);
     const char *legacy_landscape=cupsGetOption("landscape",count,options);
     int landscape=0;
@@ -91,7 +95,7 @@ int main(int argc,char **argv) {
           "@PJL SET USERNAME=Codex\r\n@PJL SET HOLD=OFF\r\n@PJL SET COVER=OFF\r\n@PJL SET SECTION=OFF\r\n",stdout);
     for (size_t p=1;p<=pages && !cancelled && !io_error;++p) {
         size_t width=0,height=0;
-        unsigned char *pixels=bizhub_raster_page(CGPDFDocumentGetPage(doc,p),&width,&height,photo,landscape);
+        unsigned char *pixels=bizhub_raster_page(CGPDFDocumentGetPage(doc,p),&width,&height,rendering,landscape);
         if (!pixels) {fprintf(stderr,"ERROR: Cannot render page %zu\n",p);io_error=1;break;}
         fprintf(stderr,"PAGE: %zu %ld\n",p,copies);
         printf("@PJL SET MEDIASOURCE=AUTO\r\n@PJL SET MEDIATYPE=PLAIN\r\n"
